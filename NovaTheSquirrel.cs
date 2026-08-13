@@ -152,7 +152,7 @@ public class NovaTheSquirrel : NESEffectPack
     {
         if (codeParams.Length != 2 || !Abilities.TryGetValue(codeParams[1], out var ability))
         {
-            Respond(request, EffectStatus.FailTemporary, StandardErrors.UnknownEffect, FinalCode(request));
+            Respond(request, EffectStatus.FailTemporary, StandardErrors.EffectUnknown, FinalCode(request));
             return;
         }
 
