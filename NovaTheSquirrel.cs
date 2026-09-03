@@ -15,9 +15,6 @@ public class NovaTheSquirrel : NESEffectPack
     /// <param name="statusUpdateHandler">The handler that publishes pack status updates.</param>
     public NovaTheSquirrel(UserRecord player, Func<CrowdControlBlock, bool> responseHandler, Action<object> statusUpdateHandler) : base(player, responseHandler, statusUpdateHandler) { }
 
-    /// <summary>Address of the flag indicating that Nova is moving through a normal door.</summary>
-    private const ushort ADDR_IS_NORMAL_DOOR = 0x0023;
-
     /// <summary>Address of Nova's current health in half-heart units.</summary>
     private const ushort ADDR_PLAYER_HEALTH = 0x004B;
 
@@ -138,6 +135,10 @@ public class NovaTheSquirrel : NESEffectPack
             !Connector.Read8(ADDR_PLAYER_HEALTH, out byte health))
             return GameState.Unknown;
 
+        bool hasHealthyPlayer = health is > 0 and <= 8;
+
+        // PRGBank identifies the code executing at this instant, not the overall game mode. Gameplay
+        // switches through its music, object, level-processing, and main-loop banks every frame.
         if (prgBank == 0x0E)
         {
             if (!Connector.Read8(ADDR_OPTIONS_VIA_INVENTORY, out byte optionsViaInventory) ||
@@ -150,23 +151,24 @@ public class NovaTheSquirrel : NESEffectPack
                                  (swapList0 == 0x50 &&
                                   lastMenuOption is 9 or 10 &&
                                   (inventorySwap == 0x80 || inventorySwap < 10));
-            return isPauseScreen && health is > 0 and <= 8 ? GameState.Paused : GameState.Menu;
+            if (isPauseScreen && hasHealthyPlayer) return GameState.Paused;
+            if (!hasHealthyPlayer) return GameState.Menu;
         }
 
-        if (prgBank is 0x03 or 0x04 or 0x05 or 0x0D) return GameState.Menu;
+        if (!hasHealthyPlayer && prgBank is 0x03 or 0x04 or 0x05 or 0x0D)
+            return GameState.Menu;
 
         if (!Connector.Read8(ADDR_NEED_DIALOG, out byte needDialog) ||
             !Connector.Read8(ADDR_NEED_LEVEL_RELOAD, out byte needLevelReload) ||
             !Connector.Read8(ADDR_NEED_LEVEL_RERENDER, out byte needLevelRerender) ||
-            !Connector.Read8(ADDR_IS_NORMAL_DOOR, out byte isNormalDoor) ||
             !Connector.Read8(ADDR_PLACE_BLOCK, out byte placeBlock))
             return GameState.Unknown;
 
         if (needDialog != 0 || prgBank == 0x07) return GameState.Cutscene;
-        if (needLevelReload != 0 || needLevelRerender != 0 || isNormalDoor != 0) return GameState.Loading;
+        if (needLevelReload != 0 || needLevelRerender != 0) return GameState.Loading;
         if (placeBlock != 0) return GameState.InputLocked;
-        if (health is 0 or > 8) return GameState.BadPlayerState;
-        return prgBank is 0x08 or 0x09 ? GameState.InLevel : GameState.Loading;
+        if (!hasHealthyPlayer) return GameState.BadPlayerState;
+        return GameState.InLevel;
     }
 
     /// <inheritdoc/>
