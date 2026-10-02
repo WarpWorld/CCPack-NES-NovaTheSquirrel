@@ -1,5 +1,11 @@
 # Nova the Squirrel Crowd Control Pack
 
+## Pack metadata
+
+- Platform: `NES`
+- Connector type: `NESConnector`
+- Supported runtime: `BizHawk`
+
 This repository contains a Crowd Control effect pack for
 [Nova the Squirrel](https://github.com/NovaSquirrel/NovaTheSquirrel), built as a
 BizHawk connector demonstration for the NES.
